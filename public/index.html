@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FIFA World Cup 2026 · Quiniela</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<!-- ════════════════════ LANDING PAGE ════════════════════ -->
+<div id="page-landing" class="page">
+  <div class="landing-bg">
+    <div class="landing-overlay"></div>
+    <div class="landing-content">
+      <div class="landing-brand">
+        <div class="ball-icon">⚽</div>
+        <div class="brand-text">
+          <span class="brand-title">FIFA World Cup</span>
+          <span class="brand-year">2026</span>
+        </div>
+      </div>
+      <h1 class="landing-headline">QUINIELA OFICIAL</h1>
+      <p class="landing-sub">Grupo Innovación Tecnológica</p>
+      <div class="landing-stats-strip">
+        <div class="strip-item"><span class="strip-num">48</span><span class="strip-label">Partidos</span></div>
+        <div class="strip-sep"></div>
+        <div class="strip-item"><span class="strip-num">8</span><span class="strip-label">Grupos</span></div>
+        <div class="strip-sep"></div>
+        <div class="strip-item"><span class="strip-num">32</span><span class="strip-label">Selecciones</span></div>
+        <div class="strip-sep"></div>
+        <div class="strip-item"><span class="strip-num">Jun–Jul</span><span class="strip-label">2026</span></div>
+      </div>
+    </div>
+
+    <!-- AUTH PANEL -->
+    <div class="auth-panel">
+      <div id="login-view">
+        <h2 class="auth-title">Iniciar Sesión</h2>
+        <div id="auth-error" class="error-msg hidden"></div>
+        <div class="form-group">
+          <label>Usuario</label>
+          <input id="login-user" type="text" placeholder="tu_usuario" autocomplete="username"/>
+        </div>
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password"/>
+        </div>
+        <button id="btn-login" class="btn-primary" onclick="doLogin()">Entrar al Sistema</button>
+        <p class="auth-switch">¿No tienes cuenta? <a href="#" onclick="showRegister()">Regístrate aquí</a></p>
+      </div>
+
+      <div id="register-view" class="hidden">
+        <h2 class="auth-title">Crear Cuenta</h2>
+        <div id="reg-error" class="error-msg hidden"></div>
+        <div class="form-group">
+          <label>Nombre completo</label>
+          <input id="reg-name" type="text" placeholder="Juan Pérez"/>
+        </div>
+        <div class="form-group">
+          <label>Usuario</label>
+          <input id="reg-user" type="text" placeholder="juan_perez"/>
+        </div>
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input id="reg-pass" type="password" placeholder="Mínimo 6 caracteres"/>
+        </div>
+        <button id="btn-register" class="btn-primary" onclick="doRegister()">Crear Cuenta</button>
+        <p class="auth-switch">¿Ya tienes cuenta? <a href="#" onclick="showLogin()">Inicia sesión</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ MAIN APP ════════════════════ -->
+<div id="page-app" class="page hidden">
+
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <div class="nav-brand">
+      <span class="nav-ball">⚽</span>
+      <span class="nav-title">FIFA 2026 <span class="nav-subtitle">Quiniela</span></span>
+    </div>
+    <div class="nav-tabs">
+      <button class="tab-btn active" data-tab="stats" onclick="switchTab('stats')">
+        <span class="tab-icon">📊</span> Estadísticas
+      </button>
+      <button class="tab-btn" data-tab="ranking" onclick="switchTab('ranking')">
+        <span class="tab-icon">🏆</span> Ranking
+      </button>
+      <button class="tab-btn" data-tab="quiniela" onclick="switchTab('quiniela')">
+        <span class="tab-icon">✏️</span> Mi Quiniela
+      </button>
+    </div>
+    <div class="nav-user">
+      <span id="nav-username" class="user-chip"></span>
+      <button class="btn-logout" onclick="doLogout()">Salir</button>
+    </div>
+  </nav>
+
+  <!-- ── TAB: ESTADÍSTICAS ──────────────────────────────────── -->
+  <div id="tab-stats" class="tab-content active">
+    <div class="section-header">
+      <h2>Estadísticas de la Copa</h2>
+      <span class="badge-live">🔴 En vivo</span>
+    </div>
+
+    <!-- Recent Results -->
+    <div class="content-grid">
+      <div class="col-wide">
+        <div class="card">
+          <h3 class="card-title">Resultados Recientes</h3>
+          <div id="recent-results" class="results-list"></div>
+        </div>
+        <div class="card mt-card">
+          <h3 class="card-title">Próximos Partidos</h3>
+          <div id="upcoming-games" class="results-list"></div>
+        </div>
+      </div>
+      <div class="col-narrow">
+        <div class="card">
+          <h3 class="card-title">Tabla de Posiciones por Grupo</h3>
+          <div id="group-standings"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: RANKING ───────────────────────────────────────── -->
+  <div id="tab-ranking" class="tab-content hidden">
+    <div class="section-header">
+      <h2>Ranking de la Quiniela</h2>
+      <p class="section-desc">Puntaje: Marcador exacto = <strong>3 pts</strong> · Resultado correcto = <strong>1 pt</strong></p>
+    </div>
+
+    <!-- Podium -->
+    <div id="podium" class="podium-wrap"></div>
+
+    <!-- Full table -->
+    <div class="card mt-card">
+      <h3 class="card-title">Tabla Completa</h3>
+      <div class="table-wrap">
+        <table class="ranking-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Participante</th>
+              <th class="num">Pts</th>
+              <th class="num">Exactos</th>
+              <th class="num">Resultado</th>
+              <th class="num">Pronósticos</th>
+              <th class="num">Efectividad</th>
+            </tr>
+          </thead>
+          <tbody id="ranking-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: MI QUINIELA ───────────────────────────────────── -->
+  <div id="tab-quiniela" class="tab-content hidden">
+    <div class="section-header">
+      <h2>Mi Quiniela</h2>
+      <p class="section-desc">Los campos se bloquean automáticamente cuando inicia el partido.</p>
+    </div>
+    <div id="quiniela-container" class="quiniela-wrap"></div>
+  </div>
+
+</div>
+
+<!-- ════════ ADMIN MODAL: Update Score ════════ -->
+<div id="modal-score" class="modal hidden">
+  <div class="modal-box">
+    <h3 class="modal-title">Actualizar Resultado</h3>
+    <p id="modal-game-name" class="modal-game"></p>
+    <div class="score-inputs">
+      <div class="score-side">
+        <label id="modal-home-label">Local</label>
+        <input id="modal-home-score" type="number" min="0" max="20" value="0"/>
+      </div>
+      <span class="score-sep">–</span>
+      <div class="score-side">
+        <label id="modal-away-label">Visitante</label>
+        <input id="modal-away-score" type="number" min="0" max="20" value="0"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeScoreModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveScore()">Guardar Resultado</button>
+    </div>
+  </div>
+</div>
+<div id="modal-backdrop" class="modal-backdrop hidden" onclick="closeScoreModal()"></div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
