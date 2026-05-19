@@ -5,46 +5,81 @@
 const API_URL  = 'https://api.football-data.org/v4';
 const WC_CODE  = 'WC'; // Código del Mundial en football-data.org
 
-// Mapeo nombres inglés → español
+// Mapeo nombres inglés → español (todas las variaciones conocidas de football-data.org)
 const TEAM_MAP = {
-  'Mexico':          'México',
-  'Jamaica':         'Jamaica',
-  'Venezuela':       'Venezuela',
-  'El Salvador':     'El Salvador',
-  'United States':   'USA',
-  'USA':             'USA',
-  'Panama':          'Panamá',
-  'Honduras':        'Honduras',
-  'Canada':          'Canadá',
-  'Argentina':       'Argentina',
-  'Chile':           'Chile',
-  'Peru':            'Perú',
-  'Paraguay':        'Paraguay',
-  'Brazil':          'Brasil',
-  'Uruguay':         'Uruguay',
-  'Ecuador':         'Ecuador',
-  'Bolivia':         'Bolivia',
-  'France':          'Francia',
-  'Belgium':         'Bélgica',
-  'Poland':          'Polonia',
-  'Albania':         'Albania',
-  'Spain':           'España',
-  'Portugal':        'Portugal',
-  'Morocco':         'Marruecos',
-  'Senegal':         'Senegal',
-  'Germany':         'Alemania',
-  'England':         'Inglaterra',
-  'Japan':           'Japón',
-  'Australia':       'Australia',
-  'Netherlands':     'Países Bajos',
-  'Croatia':         'Croacia',
-  'South Korea':     'Corea del Sur',
-  'Korea Republic':  'Corea del Sur',
-  'Iran':            'Irán',
+  // CONCACAF
+  'Mexico':              'México',
+  'México':              'México',
+  'Jamaica':             'Jamaica',
+  'Venezuela':           'Venezuela',
+  'El Salvador':         'El Salvador',
+  'United States':       'USA',
+  'USA':                 'USA',
+  'US':                  'USA',
+  'Panama':              'Panamá',
+  'Panamá':              'Panamá',
+  'Honduras':            'Honduras',
+  'Canada':              'Canadá',
+  'Canadá':              'Canadá',
+  // CONMEBOL
+  'Argentina':           'Argentina',
+  'Chile':               'Chile',
+  'Peru':                'Perú',
+  'Perú':                'Perú',
+  'Paraguay':            'Paraguay',
+  'Brazil':              'Brasil',
+  'Brasil':              'Brasil',
+  'Uruguay':             'Uruguay',
+  'Ecuador':             'Ecuador',
+  'Bolivia':             'Bolivia',
+  // UEFA
+  'France':              'Francia',
+  'Belgium':             'Bélgica',
+  'Poland':              'Polonia',
+  'Albania':             'Albania',
+  'Spain':               'España',
+  'Portugal':            'Portugal',
+  'Germany':             'Alemania',
+  'England':             'Inglaterra',
+  'Netherlands':         'Países Bajos',
+  'Croatia':             'Croacia',
+  // CAF
+  'Morocco':             'Marruecos',
+  'Senegal':             'Senegal',
+  // AFC
+  'Japan':               'Japón',
+  'Australia':           'Australia',
+  'South Korea':         'Corea del Sur',
+  'Korea Republic':      'Corea del Sur',
+  'Korea DPR':           'Corea del Sur',
+  'Iran':                'Irán',
+  'IR Iran':             'Irán',
+  'Islamic Republic of Iran': 'Irán',
 };
 
+// Normaliza texto: minúsculas, sin acentos, sin caracteres especiales
+function normalize(str) {
+  if (!str) return '';
+  return str.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s]/g, '').trim();
+}
+
+// Mapa normalizado para búsqueda flexible
+const TEAM_MAP_NORMALIZED = {};
+Object.entries(TEAM_MAP).forEach(([k, v]) => {
+  TEAM_MAP_NORMALIZED[normalize(k)] = v;
+});
+
 function mapTeam(name) {
-  return TEAM_MAP[name] || name;
+  if (!name) return null;
+  // 1. Coincidencia exacta
+  if (TEAM_MAP[name]) return TEAM_MAP[name];
+  // 2. Coincidencia normalizada
+  const norm = normalize(name);
+  if (TEAM_MAP_NORMALIZED[norm]) return TEAM_MAP_NORMALIZED[norm];
+  // 3. Devolver el nombre original (para log)
+  return name;
 }
 
 async function callAPI(path, apiKey) {
@@ -99,6 +134,7 @@ async function syncResults(db, pool) {
   }
 
   let updated = 0, liveCount = 0, skipped = 0;
+  const unmatched = [];
 
   for (const match of matches) {
     const { homeTeam, awayTeam, score, status, utcDate } = match;
@@ -115,7 +151,10 @@ async function syncResults(db, pool) {
       [homeName, awayName]
     );
 
-    if (!game) { skipped++; continue; }
+    if (!game) {
+      unmatched.push(`${homeName} vs ${awayName}`);
+      skipped++; continue;
+    }
 
     if (isScheduled) {
       // Limpiar datos de demo: poner upcoming con fecha real y sin marcador
@@ -144,9 +183,10 @@ async function syncResults(db, pool) {
     }
   }
 
+  if (unmatched.length > 0) console.log('⚠️ Sin coincidencia:', unmatched.slice(0, 10).join(' | '));
   const msg = `✅ Sync completo: ${updated} terminados, ${liveCount} en vivo, ${skipped} sin cambios de ${matches.length} partidos`;
   console.log(msg);
-  return { updated, live: liveCount, skipped, total: matches.length, message: msg };
+  return { updated, live: liveCount, skipped, total: matches.length, message: msg, unmatched: unmatched.slice(0, 10) };
 }
 
 function startAutoSync(db, pool) {
