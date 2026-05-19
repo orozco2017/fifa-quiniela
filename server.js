@@ -282,12 +282,32 @@ app.delete('/api/admin/users/:id', authenticate, adminOnly, async (req, res) => 
   res.json({ success: true });
 });
 
-// ─── SYNC ROUTE ───────────────────────────────────────────────────────────────
+// ─── SYNC ROUTES ──────────────────────────────────────────────────────────────
 
 app.post('/api/admin/sync', authenticate, adminOnly, async (req, res) => {
   try {
     const result = await syncResults(db, pool);
     res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Debug: ver nombres exactos que devuelve la API
+app.get('/api/admin/sync/debug', authenticate, adminOnly, async (req, res) => {
+  try {
+    const API_KEY = process.env.FOOTBALL_API_KEY;
+    const response = await fetch('https://api.football-data.org/v4/competitions/WC/matches', {
+      headers: { 'X-Auth-Token': API_KEY }
+    });
+    const data = await response.json();
+    const matches = (data.matches || []).slice(0, 20).map(m => ({
+      home: m.homeTeam?.name,
+      away: m.awayTeam?.name,
+      status: m.status,
+      date: m.utcDate
+    }));
+    res.json({ total: data.matches?.length, sample: matches });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
