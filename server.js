@@ -3,6 +3,7 @@ const path    = require('path');
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const { Pool } = require('pg');
+const { syncResults, startAutoSync } = require('./sync');
 
 const app        = express();
 const PORT       = process.env.PORT || 3000;
@@ -281,6 +282,17 @@ app.delete('/api/admin/users/:id', authenticate, adminOnly, async (req, res) => 
   res.json({ success: true });
 });
 
+// ─── SYNC ROUTE ───────────────────────────────────────────────────────────────
+
+app.post('/api/admin/sync', authenticate, adminOnly, async (req, res) => {
+  try {
+    const result = await syncResults(db, pool);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ─── GAMES ROUTES ─────────────────────────────────────────────────────────────
 
 app.get('/api/games', async (req, res) => {
@@ -391,6 +403,7 @@ initDB()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`\n🏆 FIFA Quiniela 2026 en http://localhost:${PORT}\n`);
+      startAutoSync(db, pool); // Auto-sync cada 30 min
     });
   })
   .catch(err => {

@@ -861,6 +861,32 @@ body {
 }
 .form-select:focus { border-color: var(--gold); }
 
+.btn-sync {
+  background: rgba(96,165,250,.12);
+  border: 1px solid rgba(96,165,250,.35);
+  border-radius: var(--radius-sm);
+  color: #60a5fa;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: .85rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  transition: all var(--transition);
+}
+.btn-sync:hover    { background: rgba(96,165,250,.22); }
+.btn-sync:disabled { opacity: .5; cursor: not-allowed; }
+
+.sync-status {
+  border-radius: var(--radius-sm);
+  font-size: .85rem;
+  font-weight: 600;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+}
+.sync-status.success { background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.3); color: var(--green); }
+.sync-status.error   { background: rgba(232,37,58,.1); border: 1px solid rgba(232,37,58,.3); color: #ff6b7a; }
+.sync-status.hidden  { display: none; }
+
 /* ─── PROFILE MODAL ──────────────────────────────────────────*/
 .profile-info {
   display: flex;

@@ -516,6 +516,28 @@ async function savePrediction(gameId) {
 
 // ─── ADMIN: USER MANAGEMENT ───────────────────────────────────────────────────
 
+async function syncFIFA() {
+  const btn    = document.getElementById('btn-sync');
+  const status = document.getElementById('sync-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ Sincronizando...';
+  status.className = 'sync-status';
+  status.textContent = '';
+
+  try {
+    const result = await apiPost('/api/admin/sync', {});
+    status.textContent = result.message || `✅ ${result.updated} partidos actualizados`;
+    status.classList.add('success');
+    await loadAll(); // Recargar datos
+  } catch (e) {
+    status.textContent = '❌ ' + e.message;
+    status.classList.add('error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔄 Sincronizar FIFA';
+  }
+}
+
 async function renderAdminUsers() {
   const tbody = document.getElementById('admin-users-tbody');
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px"><div class="spinner"></div></td></tr>';
