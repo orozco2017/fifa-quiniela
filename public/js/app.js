@@ -58,19 +58,20 @@ async function doLogin() {
 }
 
 async function doRegister() {
-  const name     = document.getElementById('reg-name').value.trim();
-  const username = document.getElementById('reg-user').value.trim();
-  const password = document.getElementById('reg-pass').value;
-  const errEl    = document.getElementById('reg-error');
+  const inviteCode = document.getElementById('reg-code').value.trim();
+  const name       = document.getElementById('reg-name').value.trim();
+  const username   = document.getElementById('reg-user').value.trim();
+  const password   = document.getElementById('reg-pass').value;
+  const errEl      = document.getElementById('reg-error');
 
-  if (!name || !username || !password) return showAuthError('Todos los campos son requeridos', errEl);
+  if (!inviteCode || !name || !username || !password) return showAuthError('Todos los campos son requeridos', errEl);
 
   const btn = document.getElementById('btn-register');
   btn.disabled = true;
   btn.textContent = 'Creando cuenta...';
 
   try {
-    const data = await apiPost('/api/auth/register', { name, username, password });
+    const data = await apiPost('/api/auth/register', { name, username, password, inviteCode });
     setAuth(data.token, data.user);
     showApp();
   } catch (e) {

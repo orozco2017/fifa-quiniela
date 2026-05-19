@@ -184,8 +184,13 @@ function adminOnly(req, res, next) {
 // ─── AUTH ROUTES ──────────────────────────────────────────────────────────────
 
 app.post('/api/auth/register', async (req, res) => {
-  const { username, password, name } = req.body;
+  const { username, password, name, inviteCode } = req.body;
   if (!username || !password || !name) return res.status(400).json({ error: 'Todos los campos son requeridos' });
+
+  const INVITE_CODE = process.env.INVITE_CODE;
+  if (INVITE_CODE && inviteCode !== INVITE_CODE)
+    return res.status(403).json({ error: 'Código de acceso inválido. Solicítalo al administrador.' });
+
   if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
 
   const exists = await db.one('SELECT id FROM users WHERE username = $1', [username.toLowerCase().trim()]);
