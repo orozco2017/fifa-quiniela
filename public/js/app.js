@@ -526,9 +526,13 @@ async function syncFIFA() {
 
   try {
     const result = await apiPost('/api/admin/sync', {});
-    status.textContent = result.message || `✅ ${result.updated} partidos actualizados`;
+    let msg = result.message || `✅ ${result.updated} partidos actualizados`;
+    if (result.unmatched && result.unmatched.length > 0) {
+      msg += ` | ⚠️ Sin mapeo: ${result.unmatched.join(', ')}`;
+    }
+    status.textContent = msg;
     status.classList.add('success');
-    await loadAll(); // Recargar datos
+    await loadAll();
   } catch (e) {
     status.textContent = '❌ ' + e.message;
     status.classList.add('error');
