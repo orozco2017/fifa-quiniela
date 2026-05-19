@@ -1,62 +1,60 @@
 // ═══════════════════════════════════════════════════════
-//  Sincronización automática con API-Football
-//  Actualiza resultados del Mundial 2026 en tiempo real
+//  Sincronización con football-data.org (gratis, WC 2026)
 // ═══════════════════════════════════════════════════════
 
-const API_URL = 'https://v3.football.api-sports.io';
-const WC_LEAGUE_ID = 1;   // FIFA World Cup en API-Football
-const WC_SEASON    = 2026;
+const API_URL  = 'https://api.football-data.org/v4';
+const WC_CODE  = 'WC'; // Código del Mundial en football-data.org
 
-// Mapeo de nombres en inglés (API) → español (nuestra BD)
+// Mapeo nombres inglés → español
 const TEAM_MAP = {
-  'Mexico':        'México',
-  'Jamaica':       'Jamaica',
-  'Venezuela':     'Venezuela',
-  'El Salvador':   'El Salvador',
-  'United States': 'USA',
-  'USA':           'USA',
-  'Panama':        'Panamá',
-  'Honduras':      'Honduras',
-  'Canada':        'Canadá',
-  'Argentina':     'Argentina',
-  'Chile':         'Chile',
-  'Peru':          'Perú',
-  'Paraguay':      'Paraguay',
-  'Brazil':        'Brasil',
-  'Uruguay':       'Uruguay',
-  'Ecuador':       'Ecuador',
-  'Bolivia':       'Bolivia',
-  'France':        'Francia',
-  'Belgium':       'Bélgica',
-  'Poland':        'Polonia',
-  'Albania':       'Albania',
-  'Spain':         'España',
-  'Portugal':      'Portugal',
-  'Morocco':       'Marruecos',
-  'Senegal':       'Senegal',
-  'Germany':       'Alemania',
-  'England':       'Inglaterra',
-  'Japan':         'Japón',
-  'Australia':     'Australia',
-  'Netherlands':   'Países Bajos',
-  'Croatia':       'Croacia',
-  'South Korea':   'Corea del Sur',
-  'Korea Republic':'Corea del Sur',
-  'Iran':          'Irán',
+  'Mexico':          'México',
+  'Jamaica':         'Jamaica',
+  'Venezuela':       'Venezuela',
+  'El Salvador':     'El Salvador',
+  'United States':   'USA',
+  'USA':             'USA',
+  'Panama':          'Panamá',
+  'Honduras':        'Honduras',
+  'Canada':          'Canadá',
+  'Argentina':       'Argentina',
+  'Chile':           'Chile',
+  'Peru':            'Perú',
+  'Paraguay':        'Paraguay',
+  'Brazil':          'Brasil',
+  'Uruguay':         'Uruguay',
+  'Ecuador':         'Ecuador',
+  'Bolivia':         'Bolivia',
+  'France':          'Francia',
+  'Belgium':         'Bélgica',
+  'Poland':          'Polonia',
+  'Albania':         'Albania',
+  'Spain':           'España',
+  'Portugal':        'Portugal',
+  'Morocco':         'Marruecos',
+  'Senegal':         'Senegal',
+  'Germany':         'Alemania',
+  'England':         'Inglaterra',
+  'Japan':           'Japón',
+  'Australia':       'Australia',
+  'Netherlands':     'Países Bajos',
+  'Croatia':         'Croacia',
+  'South Korea':     'Corea del Sur',
+  'Korea Republic':  'Corea del Sur',
+  'Iran':            'Irán',
 };
 
-const FINISHED = ['FT', 'AET', 'PEN']; // Statuses de partido terminado
-const LIVE     = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE'];
+function mapTeam(name) {
+  return TEAM_MAP[name] || name;
+}
 
 async function callAPI(path, apiKey) {
   const res = await fetch(`${API_URL}${path}`, {
-    headers: { 'x-apisports-key': apiKey },
+    headers: { 'X-Auth-Token': apiKey },
   });
-  if (!res.ok) throw new Error(`API-Football error ${res.status}`);
-  const data = await res.json();
-  if (data.errors && Object.keys(data.errors).length > 0)
-    throw new Error(Object.values(data.errors).join(', '));
-  return data.response || [];
+  if (res.status === 403) throw new Error('API Key inválida o sin acceso');
+  if (res.status === 429) throw new Error('Límite de llamadas alcanzado, intenta en 1 minuto');
+  if (!res.ok) throw new Error(`Error API: ${res.status}`);
+  return res.json();
 }
 
 async function recalculateGamePoints(gameId, homeScore, awayScore, pool) {
@@ -85,32 +83,33 @@ async function recalculateGamePoints(gameId, homeScore, awayScore, pool) {
 
 async function syncResults(db, pool) {
   const API_KEY = process.env.FOOTBALL_API_KEY;
-  if (!API_KEY) throw new Error('FOOTBALL_API_KEY no configurada');
+  if (!API_KEY) throw new Error('FOOTBALL_API_KEY no configurada en las variables de entorno');
 
-  console.log('🔄 Sincronizando con API-Football...');
+  console.log('🔄 Sincronizando con football-data.org...');
 
-  const fixtures = await callAPI(
-    `/fixtures?league=${WC_LEAGUE_ID}&season=${WC_SEASON}`, API_KEY
-  );
+  // Traer todos los partidos del Mundial 2026
+  const data = await callAPI(`/competitions/${WC_CODE}/matches`, API_KEY);
+  const matches = data.matches || [];
 
-  if (fixtures.length === 0) {
-    console.log('⚠️  API-Football no devolvió partidos para WC 2026 aún.');
-    return { updated: 0, live: 0, skipped: 0, total: 0, message: 'Sin datos de API aún — el torneo puede no haber iniciado.' };
+  if (matches.length === 0) {
+    return {
+      updated: 0, live: 0, skipped: 0, total: 0,
+      message: '⚠️ Sin partidos disponibles aún — el torneo iniciará el 11 de junio de 2026.'
+    };
   }
 
   let updated = 0, liveCount = 0, skipped = 0;
 
-  for (const f of fixtures) {
-    const { fixture, teams, goals } = f;
-    const statusShort = fixture.status.short;
+  for (const match of matches) {
+    const { homeTeam, awayTeam, score, status } = match;
 
-    const isFinished = FINISHED.includes(statusShort);
-    const isLive     = LIVE.includes(statusShort);
+    const isFinished = status === 'FINISHED';
+    const isLive     = status === 'IN_PLAY' || status === 'PAUSED' || status === 'HALFTIME';
 
     if (!isFinished && !isLive) { skipped++; continue; }
 
-    const homeName = TEAM_MAP[teams.home.name] || teams.home.name;
-    const awayName = TEAM_MAP[teams.away.name] || teams.away.name;
+    const homeName = mapTeam(homeTeam.name);
+    const awayName = mapTeam(awayTeam.name);
 
     const game = await db.one(
       'SELECT * FROM games WHERE home_team = $1 AND away_team = $2',
@@ -119,9 +118,9 @@ async function syncResults(db, pool) {
 
     if (!game) { skipped++; continue; }
 
-    const newStatus  = isFinished ? 'completed' : 'live';
-    const homeScore  = goals.home ?? 0;
-    const awayScore  = goals.away ?? 0;
+    const homeScore = score.fullTime.home ?? score.halfTime.home ?? 0;
+    const awayScore = score.fullTime.away ?? score.halfTime.away ?? 0;
+    const newStatus = isFinished ? 'completed' : 'live';
 
     await db.run(
       'UPDATE games SET home_score=$1, away_score=$2, status=$3 WHERE id=$4',
@@ -136,17 +135,14 @@ async function syncResults(db, pool) {
     }
   }
 
-  const msg = `✅ Sync completo: ${updated} terminados, ${liveCount} en vivo, ${skipped} sin cambios`;
+  const msg = `✅ Sync completo: ${updated} terminados, ${liveCount} en vivo, ${skipped} sin cambios de ${matches.length} partidos`;
   console.log(msg);
-  return { updated, live: liveCount, skipped, total: fixtures.length, message: msg };
+  return { updated, live: liveCount, skipped, total: matches.length, message: msg };
 }
 
-// Auto-sync cada 30 minutos (solo si hay API key)
 function startAutoSync(db, pool) {
   if (!process.env.FOOTBALL_API_KEY) return;
-  // Primera sync al iniciar
   syncResults(db, pool).catch(e => console.error('Auto-sync error:', e.message));
-  // Luego cada 30 minutos
   setInterval(() => {
     syncResults(db, pool).catch(e => console.error('Auto-sync error:', e.message));
   }, 30 * 60 * 1000);
