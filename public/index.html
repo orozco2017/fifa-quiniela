@@ -94,7 +94,7 @@
       </button>
     </div>
     <div class="nav-user">
-      <span id="nav-username" class="user-chip"></span>
+      <span id="nav-username" class="user-chip" onclick="openProfileModal()" title="Mi perfil"></span>
       <button class="btn-logout" onclick="doLogout()">Salir</button>
     </div>
   </nav>
@@ -170,6 +170,40 @@
 
 </div>
 
+<!-- ════════ MODAL: Mi Perfil ════════ -->
+<div id="modal-profile" class="modal hidden">
+  <div class="modal-box">
+    <h3 class="modal-title">Mi Perfil</h3>
+    <div class="profile-info">
+      <div class="profile-avatar">👤</div>
+      <div>
+        <div id="profile-name" class="profile-name"></div>
+        <div id="profile-username" class="profile-username"></div>
+      </div>
+    </div>
+    <hr class="modal-divider"/>
+    <h4 class="modal-subtitle">Cambiar Contraseña</h4>
+    <div id="profile-error" class="error-msg hidden"></div>
+    <div id="profile-success" class="success-msg hidden"></div>
+    <div class="form-group">
+      <label>Contraseña actual</label>
+      <input id="pwd-current" type="password" placeholder="••••••••"/>
+    </div>
+    <div class="form-group">
+      <label>Nueva contraseña</label>
+      <input id="pwd-new" type="password" placeholder="Mínimo 6 caracteres"/>
+    </div>
+    <div class="form-group">
+      <label>Confirmar nueva contraseña</label>
+      <input id="pwd-confirm" type="password" placeholder="Repite la nueva contraseña"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeProfileModal()">Cerrar</button>
+      <button class="btn-primary" onclick="changePassword()">Cambiar Contraseña</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════════ ADMIN MODAL: Update Score ════════ -->
 <div id="modal-score" class="modal hidden">
   <div class="modal-box">
@@ -192,7 +226,7 @@
     </div>
   </div>
 </div>
-<div id="modal-backdrop" class="modal-backdrop hidden" onclick="closeScoreModal()"></div>
+<div id="modal-backdrop" class="modal-backdrop hidden" onclick="closeAllModals()"></div>
 
 <div id="toast" class="toast hidden"></div>
 

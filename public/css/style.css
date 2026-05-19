@@ -802,6 +802,38 @@ body {
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
 .modal-actions .btn-primary { width: auto; }
 
+/* ─── PROFILE MODAL ──────────────────────────────────────────*/
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.profile-avatar { font-size: 2rem; }
+.profile-name   { font-size: 1rem; font-weight: 700; }
+.profile-username { font-size: .82rem; color: var(--text-muted); }
+
+.modal-divider  { border: none; border-top: 1px solid var(--border); margin: 4px 0 18px; }
+.modal-subtitle { font-size: .9rem; font-weight: 700; color: var(--text-muted); margin-bottom: 14px; }
+
+.success-msg {
+  background: rgba(34,197,94,.1);
+  border: 1px solid rgba(34,197,94,.3);
+  border-radius: var(--radius-sm);
+  color: var(--green);
+  font-size: .85rem;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+/* Chip clickable */
+.user-chip { cursor: pointer; }
+.user-chip:hover { border-color: var(--gold); color: var(--text); }
+
 /* ─── TOAST ───────────────────────────────────────────────── */
 .toast {
   position: fixed;

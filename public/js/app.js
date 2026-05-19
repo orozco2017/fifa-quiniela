@@ -508,6 +508,66 @@ async function savePrediction(gameId) {
   }
 }
 
+// ─── PROFILE MODAL ────────────────────────────────────────────────────────────
+
+function openProfileModal() {
+  document.getElementById('profile-name').textContent     = state.user.name;
+  document.getElementById('profile-username').textContent = '@' + state.user.username;
+  document.getElementById('pwd-current').value  = '';
+  document.getElementById('pwd-new').value      = '';
+  document.getElementById('pwd-confirm').value  = '';
+  document.getElementById('profile-error').classList.add('hidden');
+  document.getElementById('profile-success').classList.add('hidden');
+  document.getElementById('modal-profile').classList.remove('hidden');
+  document.getElementById('modal-backdrop').classList.remove('hidden');
+}
+
+function closeProfileModal() {
+  document.getElementById('modal-profile').classList.add('hidden');
+  document.getElementById('modal-backdrop').classList.add('hidden');
+}
+
+function closeAllModals() {
+  closeProfileModal();
+  closeScoreModal();
+}
+
+async function changePassword() {
+  const current = document.getElementById('pwd-current').value;
+  const newPwd  = document.getElementById('pwd-new').value;
+  const confirm = document.getElementById('pwd-confirm').value;
+  const errEl   = document.getElementById('profile-error');
+  const sucEl   = document.getElementById('profile-success');
+
+  errEl.classList.add('hidden');
+  sucEl.classList.add('hidden');
+
+  if (!current || !newPwd || !confirm) {
+    errEl.textContent = 'Todos los campos son requeridos';
+    return errEl.classList.remove('hidden');
+  }
+  if (newPwd !== confirm) {
+    errEl.textContent = 'Las contraseñas nuevas no coinciden';
+    return errEl.classList.remove('hidden');
+  }
+  if (newPwd.length < 6) {
+    errEl.textContent = 'La nueva contraseña debe tener al menos 6 caracteres';
+    return errEl.classList.remove('hidden');
+  }
+
+  try {
+    await apiPut('/api/auth/password', { currentPassword: current, newPassword: newPwd });
+    document.getElementById('pwd-current').value = '';
+    document.getElementById('pwd-new').value      = '';
+    document.getElementById('pwd-confirm').value  = '';
+    sucEl.textContent = '✅ Contraseña cambiada correctamente';
+    sucEl.classList.remove('hidden');
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.classList.remove('hidden');
+  }
+}
+
 // ─── ADMIN: SCORE MODAL ───────────────────────────────────────────────────────
 
 function openScoreModal(gameId) {
