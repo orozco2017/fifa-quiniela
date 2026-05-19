@@ -101,15 +101,14 @@ async function syncResults(db, pool) {
   let updated = 0, liveCount = 0, skipped = 0;
 
   for (const match of matches) {
-    const { homeTeam, awayTeam, score, status } = match;
+    const { homeTeam, awayTeam, score, status, utcDate } = match;
 
-    const isFinished = status === 'FINISHED';
-    const isLive     = status === 'IN_PLAY' || status === 'PAUSED' || status === 'HALFTIME';
+    const isFinished  = status === 'FINISHED';
+    const isLive      = status === 'IN_PLAY' || status === 'PAUSED' || status === 'HALFTIME';
+    const isScheduled = status === 'SCHEDULED' || status === 'TIMED';
 
-    if (!isFinished && !isLive) { skipped++; continue; }
-
-    const homeName = mapTeam(homeTeam.name);
-    const awayName = mapTeam(awayTeam.name);
+    const homeName = mapTeam(homeTeam.name || homeTeam.shortName || '');
+    const awayName = mapTeam(awayTeam.name || awayTeam.shortName || '');
 
     const game = await db.one(
       'SELECT * FROM games WHERE home_team = $1 AND away_team = $2',
@@ -118,19 +117,29 @@ async function syncResults(db, pool) {
 
     if (!game) { skipped++; continue; }
 
-    const homeScore = score.fullTime.home ?? score.halfTime.home ?? 0;
-    const awayScore = score.fullTime.away ?? score.halfTime.away ?? 0;
-    const newStatus = isFinished ? 'completed' : 'live';
-
-    await db.run(
-      'UPDATE games SET home_score=$1, away_score=$2, status=$3 WHERE id=$4',
-      [homeScore, awayScore, newStatus, game.id]
-    );
-
-    if (isFinished) {
+    if (isScheduled) {
+      // Limpiar datos de demo: poner upcoming con fecha real y sin marcador
+      await db.run(
+        'UPDATE games SET home_score=NULL, away_score=NULL, status=$1, game_date=$2 WHERE id=$3',
+        ['upcoming', utcDate, game.id]
+      );
+      skipped++;
+    } else if (isFinished) {
+      const homeScore = score.fullTime.home ?? 0;
+      const awayScore = score.fullTime.away ?? 0;
+      await db.run(
+        'UPDATE games SET home_score=$1, away_score=$2, status=$3, game_date=$4 WHERE id=$5',
+        [homeScore, awayScore, 'completed', utcDate, game.id]
+      );
       await recalculateGamePoints(game.id, homeScore, awayScore, pool);
       updated++;
-    } else {
+    } else if (isLive) {
+      const homeScore = score.fullTime.home ?? score.halfTime.home ?? 0;
+      const awayScore = score.fullTime.away ?? score.halfTime.away ?? 0;
+      await db.run(
+        'UPDATE games SET home_score=$1, away_score=$2, status=$3 WHERE id=$4',
+        [homeScore, awayScore, 'live', game.id]
+      );
       liveCount++;
     }
   }
