@@ -802,6 +802,65 @@ body {
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
 .modal-actions .btn-primary { width: auto; }
 
+/* ─── ADMIN PANEL ────────────────────────────────────────────*/
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-admin-action {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: .72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  transition: all var(--transition);
+  background: transparent;
+}
+.btn-admin-action.edit { color: var(--gold);   border-color: rgba(245,197,24,.3); }
+.btn-admin-action.edit:hover { background: rgba(245,197,24,.1); }
+.btn-admin-action.pwd  { color: #60a5fa;  border-color: rgba(96,165,250,.3); }
+.btn-admin-action.pwd:hover  { background: rgba(96,165,250,.1); }
+.btn-admin-action.del  { color: #ff6b7a;  border-color: rgba(232,37,58,.3); }
+.btn-admin-action.del:hover  { background: rgba(232,37,58,.1); }
+
+.role-badge {
+  border-radius: 20px;
+  font-size: .75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  display: inline-block;
+}
+.role-badge.admin { background: rgba(245,197,24,.12); color: var(--gold); border: 1px solid rgba(245,197,24,.3); }
+.role-badge.user  { background: rgba(255,255,255,.05); color: var(--text-muted); border: 1px solid var(--border); }
+
+.form-select {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 1rem;
+  padding: 11px 14px;
+  outline: none;
+  cursor: pointer;
+}
+.form-select:focus { border-color: var(--gold); }
+
 /* ─── PROFILE MODAL ──────────────────────────────────────────*/
 .profile-info {
   display: flex;

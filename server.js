@@ -231,6 +231,56 @@ app.put('/api/auth/password', authenticate, async (req, res) => {
   res.json({ success: true });
 });
 
+// ─── ADMIN: USER MANAGEMENT ───────────────────────────────────────────────────
+
+app.get('/api/admin/users', authenticate, adminOnly, async (req, res) => {
+  const users = await db.all(
+    `SELECT id, username, name, role, created_at FROM users ORDER BY created_at ASC`
+  );
+  res.json(users);
+});
+
+app.post('/api/admin/users', authenticate, adminOnly, async (req, res) => {
+  const { username, password, name, role } = req.body;
+  if (!username || !password || !name) return res.status(400).json({ error: 'Todos los campos son requeridos' });
+  if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+
+  const exists = await db.one('SELECT id FROM users WHERE username = $1', [username.toLowerCase().trim()]);
+  if (exists) return res.status(409).json({ error: 'El usuario ya existe' });
+
+  const hash = bcrypt.hashSync(password, 10);
+  const row  = await db.one(
+    'INSERT INTO users (username, password, name, role) VALUES ($1,$2,$3,$4) RETURNING id, username, name, role, created_at',
+    [username.toLowerCase().trim(), hash, name.trim(), role || 'user']
+  );
+  res.json(row);
+});
+
+app.put('/api/admin/users/:id', authenticate, adminOnly, async (req, res) => {
+  const { name, role } = req.body;
+  const userId = parseInt(req.params.id);
+  if (userId === req.user.id) return res.status(400).json({ error: 'No puedes editar tu propio rol' });
+
+  await db.run('UPDATE users SET name=$1, role=$2 WHERE id=$3', [name.trim(), role, userId]);
+  res.json({ success: true });
+});
+
+app.put('/api/admin/users/:id/password', authenticate, adminOnly, async (req, res) => {
+  const { password } = req.body;
+  if (!password || password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+  const hash = bcrypt.hashSync(password, 10);
+  await db.run('UPDATE users SET password=$1 WHERE id=$2', [hash, parseInt(req.params.id)]);
+  res.json({ success: true });
+});
+
+app.delete('/api/admin/users/:id', authenticate, adminOnly, async (req, res) => {
+  const userId = parseInt(req.params.id);
+  if (userId === req.user.id) return res.status(400).json({ error: 'No puedes eliminar tu propia cuenta' });
+  await db.run('DELETE FROM predictions WHERE user_id=$1', [userId]);
+  await db.run('DELETE FROM users WHERE id=$1', [userId]);
+  res.json({ success: true });
+});
+
 // ─── GAMES ROUTES ─────────────────────────────────────────────────────────────
 
 app.get('/api/games', async (req, res) => {

@@ -96,6 +96,9 @@
       <button class="tab-btn" data-tab="quiniela" onclick="switchTab('quiniela')">
         <span class="tab-icon">✏️</span> Mi Quiniela
       </button>
+      <button class="tab-btn tab-admin hidden" data-tab="admin" onclick="switchTab('admin')">
+        <span class="tab-icon">⚙️</span> Administración
+      </button>
     </div>
     <div class="nav-user">
       <span id="nav-username" class="user-chip" onclick="openProfileModal()" title="Mi perfil"></span>
@@ -163,6 +166,35 @@
     </div>
   </div>
 
+  <!-- ── TAB: ADMINISTRACIÓN ───────────────────────────────── -->
+  <div id="tab-admin" class="tab-content hidden">
+    <div class="section-header">
+      <h2>⚙️ Panel de Administración</h2>
+      <p class="section-desc">Gestión de usuarios del sistema</p>
+    </div>
+    <div class="card">
+      <div class="admin-toolbar">
+        <h3 class="card-title" style="margin-bottom:0">Usuarios registrados</h3>
+        <button class="btn-primary" style="width:auto;padding:8px 16px;" onclick="openNewUserModal()">+ Nuevo usuario</button>
+      </div>
+      <div class="table-wrap">
+        <table class="ranking-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Registro</th>
+              <th style="text-align:center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="admin-users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- ── TAB: MI QUINIELA ───────────────────────────────────── -->
   <div id="tab-quiniela" class="tab-content hidden">
     <div class="section-header">
@@ -172,6 +204,57 @@
     <div id="quiniela-container" class="quiniela-wrap"></div>
   </div>
 
+</div>
+
+<!-- ════════ ADMIN MODAL: Nuevo / Editar Usuario ════════ -->
+<div id="modal-user" class="modal hidden">
+  <div class="modal-box">
+    <h3 class="modal-title" id="modal-user-title">Nuevo Usuario</h3>
+    <div id="user-error" class="error-msg hidden"></div>
+    <div id="user-success" class="success-msg hidden"></div>
+    <input id="edit-user-id" type="hidden"/>
+    <div class="form-group">
+      <label>Nombre completo</label>
+      <input id="edit-name" type="text" placeholder="Juan Pérez"/>
+    </div>
+    <div class="form-group">
+      <label>Usuario</label>
+      <input id="edit-username" type="text" placeholder="juan_perez"/>
+    </div>
+    <div class="form-group" id="edit-password-group">
+      <label>Contraseña</label>
+      <input id="edit-password" type="password" placeholder="Mínimo 6 caracteres"/>
+    </div>
+    <div class="form-group">
+      <label>Rol</label>
+      <select id="edit-role" class="form-select">
+        <option value="user">Usuario</option>
+        <option value="admin">Administrador</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeUserModal()">Cancelar</button>
+      <button class="btn-primary" id="btn-save-user" onclick="saveUser()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ ADMIN MODAL: Reset Contraseña ════════ -->
+<div id="modal-reset-pwd" class="modal hidden">
+  <div class="modal-box">
+    <h3 class="modal-title">Resetear Contraseña</h3>
+    <p id="reset-pwd-username" class="modal-game"></p>
+    <div id="reset-error" class="error-msg hidden"></div>
+    <div id="reset-success" class="success-msg hidden"></div>
+    <div class="form-group">
+      <label>Nueva contraseña</label>
+      <input id="reset-pwd-input" type="password" placeholder="Mínimo 6 caracteres"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeResetModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveResetPassword()">Guardar Contraseña</button>
+    </div>
+  </div>
 </div>
 
 <!-- ════════ MODAL: Mi Perfil ════════ -->

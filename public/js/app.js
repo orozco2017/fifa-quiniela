@@ -121,6 +121,10 @@ function showApp() {
   document.getElementById('page-landing').classList.add('hidden');
   document.getElementById('page-app').classList.remove('hidden');
   document.getElementById('nav-username').textContent = `👤 ${state.user.name}`;
+  // Mostrar pestaña admin solo a administradores
+  document.querySelectorAll('.tab-admin').forEach(el =>
+    el.classList.toggle('hidden', state.user.role !== 'admin')
+  );
   loadAll();
 }
 
@@ -152,6 +156,7 @@ function renderCurrentTab() {
   if (state.currentTab === 'stats')    renderStats();
   if (state.currentTab === 'ranking')  renderRanking();
   if (state.currentTab === 'quiniela') renderMyQuiniela();
+  if (state.currentTab === 'admin')    renderAdminUsers();
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
@@ -509,6 +514,141 @@ async function savePrediction(gameId) {
   }
 }
 
+// ─── ADMIN: USER MANAGEMENT ───────────────────────────────────────────────────
+
+async function renderAdminUsers() {
+  const tbody = document.getElementById('admin-users-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px"><div class="spinner"></div></td></tr>';
+  try {
+    const users = await apiGet('/api/admin/users');
+    tbody.innerHTML = users.map((u, i) => `
+      <tr>
+        <td class="rank-pos">${i + 1}</td>
+        <td><div class="rank-name">${u.name}</div></td>
+        <td><div class="rank-user">@${u.username}</div></td>
+        <td><span class="role-badge ${u.role}">${u.role === 'admin' ? '⚙️ Admin' : '👤 Usuario'}</span></td>
+        <td style="font-size:.78rem;color:var(--text-muted)">${new Date(u.created_at).toLocaleDateString('es-MX')}</td>
+        <td>
+          <div class="admin-actions">
+            <button class="btn-admin-action edit" onclick="openEditUserModal(${u.id},'${u.name}','${u.username}','${u.role}')">✏️ Editar</button>
+            <button class="btn-admin-action pwd"  onclick="openResetModal(${u.id},'${u.username}')">🔑 Contraseña</button>
+            <button class="btn-admin-action del"  onclick="deleteUser(${u.id},'${u.name}')">🗑️ Eliminar</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${e.message}</td></tr>`;
+  }
+}
+
+let resetUserId = null;
+
+function openNewUserModal() {
+  document.getElementById('modal-user-title').textContent = 'Nuevo Usuario';
+  document.getElementById('edit-user-id').value   = '';
+  document.getElementById('edit-name').value      = '';
+  document.getElementById('edit-username').value  = '';
+  document.getElementById('edit-password').value  = '';
+  document.getElementById('edit-role').value      = 'user';
+  document.getElementById('edit-username').disabled  = false;
+  document.getElementById('edit-password-group').style.display = '';
+  document.getElementById('user-error').classList.add('hidden');
+  document.getElementById('user-success').classList.add('hidden');
+  document.getElementById('modal-user').classList.remove('hidden');
+  document.getElementById('modal-backdrop').classList.remove('hidden');
+}
+
+function openEditUserModal(id, name, username, role) {
+  document.getElementById('modal-user-title').textContent = 'Editar Usuario';
+  document.getElementById('edit-user-id').value   = id;
+  document.getElementById('edit-name').value      = name;
+  document.getElementById('edit-username').value  = username;
+  document.getElementById('edit-role').value      = role;
+  document.getElementById('edit-username').disabled  = true;
+  document.getElementById('edit-password-group').style.display = 'none';
+  document.getElementById('user-error').classList.add('hidden');
+  document.getElementById('user-success').classList.add('hidden');
+  document.getElementById('modal-user').classList.remove('hidden');
+  document.getElementById('modal-backdrop').classList.remove('hidden');
+}
+
+function closeUserModal() {
+  document.getElementById('modal-user').classList.add('hidden');
+  document.getElementById('modal-backdrop').classList.add('hidden');
+}
+
+async function saveUser() {
+  const id       = document.getElementById('edit-user-id').value;
+  const name     = document.getElementById('edit-name').value.trim();
+  const username = document.getElementById('edit-username').value.trim();
+  const password = document.getElementById('edit-password').value;
+  const role     = document.getElementById('edit-role').value;
+  const errEl    = document.getElementById('user-error');
+  const sucEl    = document.getElementById('user-success');
+  errEl.classList.add('hidden');
+  sucEl.classList.add('hidden');
+
+  try {
+    if (id) {
+      await apiPut(`/api/admin/users/${id}`, { name, role });
+    } else {
+      if (!username || !password || !name) throw new Error('Todos los campos son requeridos');
+      await apiPost('/api/admin/users', { name, username, password, role });
+    }
+    sucEl.textContent = id ? '✅ Usuario actualizado' : '✅ Usuario creado correctamente';
+    sucEl.classList.remove('hidden');
+    renderAdminUsers();
+    setTimeout(closeUserModal, 1200);
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.classList.remove('hidden');
+  }
+}
+
+function openResetModal(userId, username) {
+  resetUserId = userId;
+  document.getElementById('reset-pwd-username').textContent = `Usuario: @${username}`;
+  document.getElementById('reset-pwd-input').value = '';
+  document.getElementById('reset-error').classList.add('hidden');
+  document.getElementById('reset-success').classList.add('hidden');
+  document.getElementById('modal-reset-pwd').classList.remove('hidden');
+  document.getElementById('modal-backdrop').classList.remove('hidden');
+}
+
+function closeResetModal() {
+  document.getElementById('modal-reset-pwd').classList.add('hidden');
+  document.getElementById('modal-backdrop').classList.add('hidden');
+  resetUserId = null;
+}
+
+async function saveResetPassword() {
+  const password = document.getElementById('reset-pwd-input').value;
+  const errEl    = document.getElementById('reset-error');
+  const sucEl    = document.getElementById('reset-success');
+  errEl.classList.add('hidden');
+  sucEl.classList.add('hidden');
+  try {
+    await apiPut(`/api/admin/users/${resetUserId}/password`, { password });
+    sucEl.textContent = '✅ Contraseña actualizada';
+    sucEl.classList.remove('hidden');
+    setTimeout(closeResetModal, 1200);
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.classList.remove('hidden');
+  }
+}
+
+async function deleteUser(userId, name) {
+  if (!confirm(`¿Eliminar al usuario "${name}"?\nSe borrarán también sus pronósticos.`)) return;
+  try {
+    await api('DELETE', `/api/admin/users/${userId}`);
+    showToast(`Usuario ${name} eliminado`);
+    renderAdminUsers();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
 // ─── PROFILE MODAL ────────────────────────────────────────────────────────────
 
 function openProfileModal() {
@@ -531,6 +671,8 @@ function closeProfileModal() {
 function closeAllModals() {
   closeProfileModal();
   closeScoreModal();
+  closeUserModal();
+  closeResetModal();
 }
 
 async function changePassword() {
