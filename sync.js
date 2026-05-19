@@ -1,86 +1,164 @@
 // ═══════════════════════════════════════════════════════
-//  Sincronización con football-data.org (gratis, WC 2026)
+//  Sincronización con football-data.org — WC 2026
 // ═══════════════════════════════════════════════════════
 
-const API_URL  = 'https://api.football-data.org/v4';
-const WC_CODE  = 'WC'; // Código del Mundial en football-data.org
+const API_URL = 'https://api.football-data.org/v4';
+const WC_CODE = 'WC';
 
-// Mapeo nombres inglés → español (todas las variaciones conocidas de football-data.org)
-const TEAM_MAP = {
-  // CONCACAF
-  'Mexico':              'México',
-  'México':              'México',
-  'Jamaica':             'Jamaica',
-  'Venezuela':           'Venezuela',
-  'El Salvador':         'El Salvador',
-  'United States':       'USA',
-  'USA':                 'USA',
-  'US':                  'USA',
-  'Panama':              'Panamá',
-  'Panamá':              'Panamá',
-  'Honduras':            'Honduras',
-  'Canada':              'Canadá',
-  'Canadá':              'Canadá',
-  // CONMEBOL
-  'Argentina':           'Argentina',
-  'Chile':               'Chile',
-  'Peru':                'Perú',
-  'Perú':                'Perú',
-  'Paraguay':            'Paraguay',
-  'Brazil':              'Brasil',
-  'Brasil':              'Brasil',
-  'Uruguay':             'Uruguay',
-  'Ecuador':             'Ecuador',
-  'Bolivia':             'Bolivia',
-  // UEFA
-  'France':              'Francia',
-  'Belgium':             'Bélgica',
-  'Poland':              'Polonia',
-  'Albania':             'Albania',
-  'Spain':               'España',
-  'Portugal':            'Portugal',
-  'Germany':             'Alemania',
-  'England':             'Inglaterra',
-  'Netherlands':         'Países Bajos',
-  'Croatia':             'Croacia',
-  // CAF
-  'Morocco':             'Marruecos',
-  'Senegal':             'Senegal',
-  // AFC
-  'Japan':               'Japón',
-  'Australia':           'Australia',
-  'South Korea':         'Corea del Sur',
-  'Korea Republic':      'Corea del Sur',
-  'Korea DPR':           'Corea del Sur',
-  'Iran':                'Irán',
-  'IR Iran':             'Irán',
-  'Islamic Republic of Iran': 'Irán',
+// Nombres en español
+const TEAM_TO_ES = {
+  'Mexico':               'México',
+  'South Africa':         'Sudáfrica',
+  'South Korea':          'Corea del Sur',
+  'Korea Republic':       'Corea del Sur',
+  'Czechia':              'República Checa',
+  'Czech Republic':       'República Checa',
+  'Canada':               'Canadá',
+  'Bosnia-Herzegovina':   'Bosnia-Herzegovina',
+  'Bosnia and Herzegovina':'Bosnia-Herzegovina',
+  'United States':        'USA',
+  'USA':                  'USA',
+  'Paraguay':             'Paraguay',
+  'Qatar':                'Qatar',
+  'Switzerland':          'Suiza',
+  'Brazil':               'Brasil',
+  'Morocco':              'Marruecos',
+  'Haiti':                'Haití',
+  'Scotland':             'Escocia',
+  'Australia':            'Australia',
+  'Turkey':               'Turquía',
+  'Türkiye':              'Turquía',
+  'Germany':              'Alemania',
+  'Curaçao':              'Curaçao',
+  'Curacao':              'Curaçao',
+  'Netherlands':          'Países Bajos',
+  'Japan':                'Japón',
+  'Ivory Coast':          'Costa de Marfil',
+  "Côte d'Ivoire":        'Costa de Marfil',
+  'Ecuador':              'Ecuador',
+  'Sweden':               'Suecia',
+  'Tunisia':              'Túnez',
+  'Spain':                'España',
+  'Cape Verde Islands':   'Cabo Verde',
+  'Cape Verde':           'Cabo Verde',
+  'Belgium':              'Bélgica',
+  'Egypt':                'Egipto',
+  'Saudi Arabia':         'Arabia Saudita',
+  'Uruguay':              'Uruguay',
+  'Iran':                 'Irán',
+  'IR Iran':              'Irán',
+  'New Zealand':          'Nueva Zelanda',
+  'France':               'Francia',
+  'Senegal':              'Senegal',
+  'Iraq':                 'Irak',
+  'Norway':               'Noruega',
+  'Argentina':            'Argentina',
+  'Algeria':              'Argelia',
+  'Austria':              'Austria',
+  'Jordan':               'Jordania',
+  'Portugal':             'Portugal',
+  'England':              'Inglaterra',
+  'Colombia':             'Colombia',
+  'Nigeria':              'Nigeria',
+  'Indonesia':            'Indonesia',
+  'Venezuela':            'Venezuela',
+  'Chile':                'Chile',
+  'Peru':                 'Perú',
+  'Poland':               'Polonia',
+  'Croatia':              'Croacia',
+  'Serbia':               'Serbia',
+  'Ukraine':              'Ucrania',
+  'Hungary':              'Hungría',
+  'Romania':              'Rumanía',
+  'Cameroon':             'Camerún',
+  'Ghana':                'Ghana',
+  'Mali':                 'Malí',
+  'Kenya':                'Kenia',
+  'Tanzania':             'Tanzania',
+  'Bahrain':              'Bahréin',
+  'Oman':                 'Omán',
+  'Honduras':             'Honduras',
+  'Panama':               'Panamá',
+  'Jamaica':              'Jamaica',
+  'El Salvador':          'El Salvador',
+  'Costa Rica':           'Costa Rica',
+  'Bolivia':              'Bolivia',
+  'Albania':              'Albania',
 };
 
-// Normaliza texto: minúsculas, sin acentos, sin caracteres especiales
-function normalize(str) {
-  if (!str) return '';
-  return str.toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9\s]/g, '').trim();
-}
-
-// Mapa normalizado para búsqueda flexible
-const TEAM_MAP_NORMALIZED = {};
-Object.entries(TEAM_MAP).forEach(([k, v]) => {
-  TEAM_MAP_NORMALIZED[normalize(k)] = v;
-});
-
-function mapTeam(name) {
-  if (!name) return null;
-  // 1. Coincidencia exacta
-  if (TEAM_MAP[name]) return TEAM_MAP[name];
-  // 2. Coincidencia normalizada
-  const norm = normalize(name);
-  if (TEAM_MAP_NORMALIZED[norm]) return TEAM_MAP_NORMALIZED[norm];
-  // 3. Devolver el nombre original (para log)
-  return name;
-}
+// Banderas
+const FLAG_MAP = {
+  'Mexico':               '🇲🇽',
+  'South Africa':         '🇿🇦',
+  'South Korea':          '🇰🇷',
+  'Korea Republic':       '🇰🇷',
+  'Czechia':              '🇨🇿',
+  'Czech Republic':       '🇨🇿',
+  'Canada':               '🇨🇦',
+  'Bosnia-Herzegovina':   '🇧🇦',
+  'Bosnia and Herzegovina':'🇧🇦',
+  'United States':        '🇺🇸',
+  'USA':                  '🇺🇸',
+  'Paraguay':             '🇵🇾',
+  'Qatar':                '🇶🇦',
+  'Switzerland':          '🇨🇭',
+  'Brazil':               '🇧🇷',
+  'Morocco':              '🇲🇦',
+  'Haiti':                '🇭🇹',
+  'Scotland':             '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  'Australia':            '🇦🇺',
+  'Turkey':               '🇹🇷',
+  'Türkiye':              '🇹🇷',
+  'Germany':              '🇩🇪',
+  'Curaçao':              '🇨🇼',
+  'Curacao':              '🇨🇼',
+  'Netherlands':          '🇳🇱',
+  'Japan':                '🇯🇵',
+  'Ivory Coast':          '🇨🇮',
+  "Côte d'Ivoire":        '🇨🇮',
+  'Ecuador':              '🇪🇨',
+  'Sweden':               '🇸🇪',
+  'Tunisia':              '🇹🇳',
+  'Spain':                '🇪🇸',
+  'Cape Verde Islands':   '🇨🇻',
+  'Cape Verde':           '🇨🇻',
+  'Belgium':              '🇧🇪',
+  'Egypt':                '🇪🇬',
+  'Saudi Arabia':         '🇸🇦',
+  'Uruguay':              '🇺🇾',
+  'Iran':                 '🇮🇷',
+  'IR Iran':              '🇮🇷',
+  'New Zealand':          '🇳🇿',
+  'France':               '🇫🇷',
+  'Senegal':              '🇸🇳',
+  'Iraq':                 '🇮🇶',
+  'Norway':               '🇳🇴',
+  'Argentina':            '🇦🇷',
+  'Algeria':              '🇩🇿',
+  'Austria':              '🇦🇹',
+  'Jordan':               '🇯🇴',
+  'Portugal':             '🇵🇹',
+  'England':              '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  'Colombia':             '🇨🇴',
+  'Nigeria':              '🇳🇬',
+  'Indonesia':            '🇮🇩',
+  'Venezuela':            '🇻🇪',
+  'Chile':                '🇨🇱',
+  'Peru':                 '🇵🇪',
+  'Poland':               '🇵🇱',
+  'Croatia':              '🇭🇷',
+  'Serbia':               '🇷🇸',
+  'Ukraine':              '🇺🇦',
+  'Honduras':             '🇭🇳',
+  'Panama':               '🇵🇦',
+  'Jamaica':              '🇯🇲',
+  'El Salvador':          '🇸🇻',
+  'Costa Rica':           '🇨🇷',
+  'Bolivia':              '🇧🇴',
+  'Cameroon':             '🇨🇲',
+  'Ghana':                '🇬🇭',
+  'Albania':              '🇦🇱',
+};
 
 async function callAPI(path, apiKey) {
   const res = await fetch(`${API_URL}${path}`, {
@@ -92,13 +170,62 @@ async function callAPI(path, apiKey) {
   return res.json();
 }
 
+// ─── IMPORTAR CALENDARIO REAL ─────────────────────────────────────────────────
+
+async function importSchedule(db, pool) {
+  const API_KEY = process.env.FOOTBALL_API_KEY;
+  if (!API_KEY) throw new Error('FOOTBALL_API_KEY no configurada');
+
+  console.log('📥 Importando calendario real del Mundial 2026...');
+  const data = await callAPI(`/competitions/${WC_CODE}/matches`, API_KEY);
+  const matches = data.matches || [];
+  if (matches.length === 0) throw new Error('No se obtuvieron partidos de la API');
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM predictions');
+    await client.query('DELETE FROM games');
+
+    let inserted = 0;
+    for (const match of matches) {
+      const { homeTeam, awayTeam, utcDate, matchday, group, stage } = match;
+
+      // Solo fase de grupos por ahora
+      if (stage !== 'GROUP_STAGE') continue;
+
+      const groupLetter = group ? group.replace('GROUP_', '') : '?';
+      const homeName    = TEAM_TO_ES[homeTeam.name] || homeTeam.name;
+      const awayName    = TEAM_TO_ES[awayTeam.name] || awayTeam.name;
+      const homeFlag    = FLAG_MAP[homeTeam.name] || '🏳️';
+      const awayFlag    = FLAG_MAP[awayTeam.name] || '🏳️';
+
+      await client.query(
+        `INSERT INTO games (group_name, matchday, home_team, away_team, home_flag, away_flag, game_date, venue, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [groupLetter, matchday || 1, homeName, awayName, homeFlag, awayFlag, utcDate, '', 'upcoming']
+      );
+      inserted++;
+    }
+
+    await client.query('COMMIT');
+    console.log(`✅ ${inserted} partidos importados`);
+    return { inserted, total: matches.length };
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+// ─── SINCRONIZAR RESULTADOS ───────────────────────────────────────────────────
+
 async function recalculateGamePoints(gameId, homeScore, awayScore, pool) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const { rows: preds } = await client.query(
-      'SELECT * FROM predictions WHERE game_id = $1', [gameId]
-    );
+    const { rows: preds } = await client.query('SELECT * FROM predictions WHERE game_id = $1', [gameId]);
     for (const p of preds) {
       let pts = 0;
       const pw = p.home_score > p.away_score ? 'H' : p.home_score < p.away_score ? 'A' : 'D';
@@ -118,83 +245,46 @@ async function recalculateGamePoints(gameId, homeScore, awayScore, pool) {
 
 async function syncResults(db, pool) {
   const API_KEY = process.env.FOOTBALL_API_KEY;
-  if (!API_KEY) throw new Error('FOOTBALL_API_KEY no configurada en las variables de entorno');
+  if (!API_KEY) throw new Error('FOOTBALL_API_KEY no configurada');
 
-  console.log('🔄 Sincronizando con football-data.org...');
-
-  // Traer todos los partidos del Mundial 2026
-  const data = await callAPI(`/competitions/${WC_CODE}/matches`, API_KEY);
+  console.log('🔄 Sincronizando resultados...');
+  const data    = await callAPI(`/competitions/${WC_CODE}/matches`, API_KEY);
   const matches = data.matches || [];
 
-  if (matches.length === 0) {
-    return {
-      updated: 0, live: 0, skipped: 0, total: 0,
-      message: '⚠️ Sin partidos disponibles aún — el torneo iniciará el 11 de junio de 2026.'
-    };
-  }
+  if (matches.length === 0)
+    return { updated: 0, live: 0, skipped: 0, total: 0,
+      message: '⚠️ Sin datos de la API aún.' };
 
   let updated = 0, liveCount = 0, skipped = 0;
-  const unmatched = [];
 
   for (const match of matches) {
     const { homeTeam, awayTeam, score, status, utcDate } = match;
-
     const isFinished  = status === 'FINISHED';
-    const isLive      = status === 'IN_PLAY' || status === 'PAUSED' || status === 'HALFTIME';
-    const isScheduled = status === 'SCHEDULED' || status === 'TIMED';
+    const isLive      = ['IN_PLAY','PAUSED','HALFTIME'].includes(status);
+    if (!isFinished && !isLive) { skipped++; continue; }
 
-    const homeName = mapTeam(homeTeam.name || homeTeam.shortName || '');
-    const awayName = mapTeam(awayTeam.name || awayTeam.shortName || '');
+    const homeName = TEAM_TO_ES[homeTeam.name] || homeTeam.name;
+    const awayName = TEAM_TO_ES[awayTeam.name] || awayTeam.name;
+    const game     = await db.one('SELECT * FROM games WHERE home_team=$1 AND away_team=$2', [homeName, awayName]);
+    if (!game) { skipped++; continue; }
 
-    const game = await db.one(
-      'SELECT * FROM games WHERE home_team = $1 AND away_team = $2',
-      [homeName, awayName]
-    );
-
-    if (!game) {
-      unmatched.push(`${homeName} vs ${awayName}`);
-      skipped++; continue;
-    }
-
-    if (isScheduled) {
-      // Limpiar datos de demo: poner upcoming con fecha real y sin marcador
-      await db.run(
-        'UPDATE games SET home_score=NULL, away_score=NULL, status=$1, game_date=$2 WHERE id=$3',
-        ['upcoming', utcDate, game.id]
-      );
-      skipped++;
-    } else if (isFinished) {
-      const homeScore = score.fullTime.home ?? 0;
-      const awayScore = score.fullTime.away ?? 0;
-      await db.run(
-        'UPDATE games SET home_score=$1, away_score=$2, status=$3, game_date=$4 WHERE id=$5',
-        [homeScore, awayScore, 'completed', utcDate, game.id]
-      );
-      await recalculateGamePoints(game.id, homeScore, awayScore, pool);
-      updated++;
-    } else if (isLive) {
-      const homeScore = score.fullTime.home ?? score.halfTime.home ?? 0;
-      const awayScore = score.fullTime.away ?? score.halfTime.away ?? 0;
-      await db.run(
-        'UPDATE games SET home_score=$1, away_score=$2, status=$3 WHERE id=$4',
-        [homeScore, awayScore, 'live', game.id]
-      );
-      liveCount++;
-    }
+    const hs = score.fullTime.home ?? 0;
+    const as_ = score.fullTime.away ?? 0;
+    await db.run('UPDATE games SET home_score=$1, away_score=$2, status=$3 WHERE id=$4',
+      [hs, as_, isFinished ? 'completed' : 'live', game.id]);
+    if (isFinished) { await recalculateGamePoints(game.id, hs, as_, pool); updated++; }
+    else liveCount++;
   }
 
-  if (unmatched.length > 0) console.log('⚠️ Sin coincidencia:', unmatched.slice(0, 10).join(' | '));
-  const msg = `✅ Sync completo: ${updated} terminados, ${liveCount} en vivo, ${skipped} sin cambios de ${matches.length} partidos`;
+  const msg = `✅ Sync: ${updated} terminados, ${liveCount} en vivo, ${skipped} sin cambios`;
   console.log(msg);
-  return { updated, live: liveCount, skipped, total: matches.length, message: msg, unmatched: unmatched.slice(0, 10) };
+  return { updated, live: liveCount, skipped, total: matches.length, message: msg };
 }
 
 function startAutoSync(db, pool) {
   if (!process.env.FOOTBALL_API_KEY) return;
-  syncResults(db, pool).catch(e => console.error('Auto-sync error:', e.message));
-  setInterval(() => {
-    syncResults(db, pool).catch(e => console.error('Auto-sync error:', e.message));
-  }, 30 * 60 * 1000);
+  syncResults(db, pool).catch(e => console.error('Auto-sync:', e.message));
+  setInterval(() => syncResults(db, pool).catch(e => console.error('Auto-sync:', e.message)), 30 * 60 * 1000);
 }
 
-module.exports = { syncResults, startAutoSync };
+module.exports = { syncResults, startAutoSync, importSchedule };

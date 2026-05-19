@@ -516,6 +516,30 @@ async function savePrediction(gameId) {
 
 // ─── ADMIN: USER MANAGEMENT ───────────────────────────────────────────────────
 
+async function importSchedule() {
+  if (!confirm('⚠️ Esto borrará todos los partidos y pronósticos actuales y los reemplazará con el calendario real de la API. ¿Continuar?')) return;
+
+  const btn    = document.getElementById('btn-import');
+  const status = document.getElementById('sync-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ Importando...';
+  status.className = 'sync-status';
+  status.textContent = '';
+
+  try {
+    const result = await apiPost('/api/admin/import-schedule', {});
+    status.textContent = `✅ Calendario importado: ${result.inserted} partidos cargados (de ${result.total} en la API)`;
+    status.classList.add('success');
+    await loadAll();
+  } catch (e) {
+    status.textContent = '❌ ' + e.message;
+    status.classList.add('error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📥 Importar Partidos Reales';
+  }
+}
+
 async function syncFIFA() {
   const btn    = document.getElementById('btn-sync');
   const status = document.getElementById('sync-status');

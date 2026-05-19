@@ -3,7 +3,7 @@ const path    = require('path');
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const { Pool } = require('pg');
-const { syncResults, startAutoSync } = require('./sync');
+const { syncResults, startAutoSync, importSchedule } = require('./sync');
 
 const app        = express();
 const PORT       = process.env.PORT || 3000;
@@ -293,21 +293,10 @@ app.post('/api/admin/sync', authenticate, adminOnly, async (req, res) => {
   }
 });
 
-// Debug: ver nombres exactos que devuelve la API (temporal, sin auth)
-app.get('/api/admin/sync/debug', async (req, res) => {
+app.post('/api/admin/import-schedule', authenticate, adminOnly, async (req, res) => {
   try {
-    const API_KEY = process.env.FOOTBALL_API_KEY;
-    const response = await fetch('https://api.football-data.org/v4/competitions/WC/matches', {
-      headers: { 'X-Auth-Token': API_KEY }
-    });
-    const data = await response.json();
-    const matches = (data.matches || []).slice(0, 20).map(m => ({
-      home: m.homeTeam?.name,
-      away: m.awayTeam?.name,
-      status: m.status,
-      date: m.utcDate
-    }));
-    res.json({ total: data.matches?.length, sample: matches });
+    const result = await importSchedule(db, pool);
+    res.json(result);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
