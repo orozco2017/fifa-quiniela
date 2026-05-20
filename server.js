@@ -365,8 +365,8 @@ app.post('/api/predictions', authenticate, async (req, res) => {
 
   const game = await db.one('SELECT * FROM games WHERE id = $1', [game_id]);
   if (!game) return res.status(404).json({ error: 'Partido no encontrado' });
-  if (new Date() >= new Date(game.game_date))
-    return res.status(403).json({ error: 'El partido ya comenzó, no se puede modificar el pronóstico' });
+  if (new Date() >= new Date(new Date(game.game_date).getTime() - 60 * 60 * 1000))
+    return res.status(403).json({ error: 'El pronóstico se bloqueó 1 hora antes del partido' });
 
   await db.run(`
     INSERT INTO predictions (user_id, game_id, home_score, away_score, updated_at)

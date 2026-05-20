@@ -10,6 +10,7 @@ let state = {
   leaderboard: [],
   currentTab: 'stats',
   adminGameId: null,
+  editingGames: new Set(),
 };
 
 // ─── API HELPERS ──────────────────────────────────────────────────────────────
@@ -162,7 +163,7 @@ function renderCurrentTab() {
 // ─── UTILS ────────────────────────────────────────────────────────────────────
 
 function isLocked(gameDate) {
-  return new Date() >= new Date(gameDate);
+  return new Date() >= new Date(new Date(gameDate).getTime() - 60 * 60 * 1000);
 }
 
 function formatDate(dateStr) {
@@ -423,6 +424,11 @@ function renderPredCard(game, pred) {
   const completed = game.status === 'completed' && game.home_score !== null;
   const predHome  = pred ? pred.home_score : '';
   const predAway  = pred ? pred.away_score : '';
+  const hasPred   = !!pred;
+  const editing   = state.editingGames.has(game.id);
+
+  // Determine if inputs should be editable
+  const inputsActive = !locked && !completed && (!hasPred || editing);
 
   let actionsHtml = '';
 
@@ -439,11 +445,19 @@ function renderPredCard(game, pred) {
       <div class="points-badge wrong">Sin pronóstico</div>`;
   } else if (locked) {
     actionsHtml = `<div class="lock-badge">🔒 Bloqueado</div>`;
+  } else if (hasPred && !editing) {
+    // Prediction saved, show edit button
+    actionsHtml = `
+      <button class="btn-save-pred edit" id="save-btn-${game.id}"
+        onclick="enableEdit(${game.id})">
+        ✏️ Editar
+      </button>`;
   } else {
+    // No prediction yet or currently editing
     actionsHtml = `
       <button class="btn-save-pred" id="save-btn-${game.id}"
         onclick="savePrediction(${game.id})">
-        ${pred ? '💾 Actualizar' : '💾 Guardar'}
+        💾 ${hasPred ? 'Actualizar' : 'Guardar'}
       </button>`;
   }
 
@@ -463,11 +477,11 @@ function renderPredCard(game, pred) {
         <div class="pred-inputs">
           <input type="number" id="pred-h-${game.id}" min="0" max="20"
             value="${predHome}" placeholder="0"
-            ${locked || completed ? 'disabled' : ''}/>
+            ${inputsActive ? '' : 'disabled'}/>
           <span class="pred-dash">–</span>
           <input type="number" id="pred-a-${game.id}" min="0" max="20"
             value="${predAway}" placeholder="0"
-            ${locked || completed ? 'disabled' : ''}/>
+            ${inputsActive ? '' : 'disabled'}/>
         </div>
         <div class="pred-team">
           <span class="pred-flag">${game.away_flag}</span>
@@ -477,6 +491,17 @@ function renderPredCard(game, pred) {
 
       <div class="pred-actions">${actionsHtml}</div>
     </div>`;
+}
+
+function enableEdit(gameId) {
+  state.editingGames.add(gameId);
+  document.getElementById(`pred-h-${gameId}`).disabled = false;
+  document.getElementById(`pred-a-${gameId}`).disabled = false;
+  const btn = document.getElementById(`save-btn-${gameId}`);
+  btn.textContent = '💾 Actualizar';
+  btn.classList.remove('edit');
+  btn.onclick = () => savePrediction(gameId);
+  document.getElementById(`pred-h-${gameId}`).focus();
 }
 
 async function savePrediction(gameId) {
@@ -504,12 +529,19 @@ async function savePrediction(gameId) {
     if (existing >= 0) state.predictions[existing] = { ...state.predictions[existing], ...entry };
     else state.predictions.push(entry);
 
-    btn.textContent = '✅ Guardado';
-    btn.classList.add('saved');
+    // Bloquear campos y cambiar botón a Editar
+    homeInput.disabled = true;
+    awayInput.disabled = true;
+    state.editingGames.delete(gameId);
+    btn.disabled = false;
+    btn.textContent = '✏️ Editar';
+    btn.classList.add('edit');
+    btn.onclick = () => enableEdit(gameId);
     showToast(`Pronóstico guardado: ${homeScore} – ${awayScore}`);
   } catch (e) {
     btn.disabled = false;
-    btn.textContent = '💾 Guardar';
+    const hasPred = state.predictions.some(p => p.game_id === gameId);
+    btn.textContent = hasPred ? '💾 Actualizar' : '💾 Guardar';
     showToast(e.message, 'error');
   }
 }

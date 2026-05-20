@@ -700,9 +700,11 @@ body {
   transition: background var(--transition), opacity var(--transition);
   white-space: nowrap;
 }
-.btn-save-pred:hover   { background: var(--green); }
-.btn-save-pred.saved   { background: var(--bg-card2); color: var(--green); pointer-events: none; }
+.btn-save-pred:hover    { background: var(--green); }
+.btn-save-pred.saved    { background: var(--bg-card2); color: var(--green); pointer-events: none; }
 .btn-save-pred:disabled { opacity: .4; cursor: not-allowed; }
+.btn-save-pred.edit     { background: rgba(245,197,24,.12); border: 1px solid rgba(245,197,24,.3); color: var(--gold); }
+.btn-save-pred.edit:hover { background: rgba(245,197,24,.22); }
 
 .lock-badge {
   align-items: center;
